@@ -16,6 +16,9 @@ CROSS_TARGET   := $(CROSS_COMPILE:-=)
 CWD            := $(shell pwd)
 CPPFLAGS       := -I$(CWD)/rootfs/include -I$(CWD)/rootfs/usr/include
 LDFLAGS        := -L$(CWD)/rootfs/lib -L$(CWD)/rootfs/usr/lib
+
+export PATH
+export ARCH CROSS_COMPILE
 export CPPFLAGS LDFLAGS
 
 # pkg-config
