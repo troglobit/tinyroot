@@ -1,4 +1,6 @@
 .PHONY: dep
+#VERSION       := `date +"%Y_%j"`
+OSVERSION      := "tinyroot linux v2018_071"
 
 KERNEL_VERSION := 4.15.4
 KERNEL         := linux-$(KERNEL_VERSION)
@@ -76,7 +78,7 @@ rootfs/etc/version: dep
 	@echo "/tmp	/tmp	tmpfs	size=4M,noatime,nodiratime,nosuid	0	0" >  rootfs/etc/fstab
 	@echo "/var	/var	tmpfs	size=4M					0	0" >> rootfs/etc/fstab
 	@mkdir -p images
-	@echo `date` >$@
+	@echo $(OSVERSION) >$@
 
 kernel: images/zImage
 
