@@ -46,11 +46,13 @@ run:
 rootfs: rootfs/etc/version
 
 rootfs/etc/version:
-	@for dir in boot dev etc/init.d proc sys mnt lib bin sbin var run; do \
+	@for dir in boot dev etc/init.d proc sys mnt lib bin sbin tmp var run; do \
 		mkdir -p rootfs/$$dir; \
 	done
 	@echo '#!/bin/sh' > rootfs/etc/init.d/rcS
 	@chmod 0755 rootfs/etc/init.d/rcS
+	@echo "/tmp	/tmp	tmpfs	size=4M,noatime,nodiratime,nosuid	0	0" >  rootfs/etc/fstab
+	@echo "/var	/var	tmpfs	size=4M					0	0" >> rootfs/etc/fstab
 	@mkdir -p images
 	@echo `date` >$@
 
