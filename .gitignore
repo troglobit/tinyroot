@@ -1,0 +1,10 @@
+*~
+images/
+romfs/
+rootfs/
+busybox-*
+finit-*
+libite-*
+libuev-*
+linux-*
+init.ramfs
