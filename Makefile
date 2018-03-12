@@ -25,14 +25,26 @@ export CPPFLAGS LDFLAGS
 PKG_CONFIG_LIBDIR := $(CWD)/rootfs/lib/pkgconfig
 export PKG_CONFIG_LIBDIR
 
-all tinyroot: images/tinyroot.cpio.gz
+# images/tinyroot.cpio.gz
+all tinyroot: images/tinyroot.img
 
-images/tinyroot.cpio.gz: rootfs/etc/version $(KERNEL)/vmlinux rootfs/bin/busybox rootfs/sbin/finit
+# 
+romfs/.stamp: rootfs/etc/version images/zImage rootfs/bin/busybox rootfs/sbin/finit
 	@$(CROSS_COMPILE)populate -f -s rootfs -d romfs
-	-@rm -rf romfs/include romfs/lib/pkgconfig romfs/share/doc romfs/lib/*.a romfs/lib/*.la
+	-@rm -rf romfs/include romfs/lib/pkgconfig romfs/share/doc
+	@for file in `find romfs/ -name *.a -o -name *.la`; do \
+		rm $$file; \
+	done
+	-@rm romfs/lib/modules/$(KERNEL_VERSION)/build romfs/lib/modules/$(KERNEL_VERSION)/source
 	@for file in `find romfs/lib/ -maxdepth 1 -type f`; do \
 		$(CROSS_COMPILE)strip $$file; \
 	done
+	@touch $@
+
+images/tinyroot.img: romfs/.stamp
+	@mksquashfs romfs/* $@ -noappend -nopad -no-xattrs -comp lzo -all-root -b 128k
+
+images/tinyroot.cpio.gz: romfs/.stamp
 	@$(KERNEL_BUILD)/scripts/gen_initramfs_list.sh -u squash -g squash romfs > init.ramfs
 	@cat tiny.ramfs init.ramfs | $(KERNEL_BUILD)/usr/gen_init_cpio - >images/tinyroot.cpio
 	@gzip -f9 images/tinyroot.cpio
