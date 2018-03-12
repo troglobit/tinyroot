@@ -56,43 +56,46 @@ rootfs/etc/version:
 	@mkdir -p images
 	@echo `date` >$@
 
-kernel: $(KERNEL)/vmlinux
+kernel: images/zImage
 
-$(KERNEL)/vmlinux: $(KERNEL) rootfs/etc/version
-	@$(MAKE) -C $<
-	@INSTALL_PATH=../images make -C $< install
-	@cp $</arch/arm/boot/zImage images/
-	@INSTALL_DTBS_PATH=../images make -C $< dtbs dtbs_install
-	@INSTALL_MOD_PATH=../rootfs INSTALL_MOD_STRIP=--strip-all make -C $< modules_install
+images/zImage: $(KERNEL)/.config rootfs/etc/version
+	@$(MAKE) -C $(KERNEL)
+	@INSTALL_PATH=../images make -C $(KERNEL) install
+	@INSTALL_DTBS_PATH=../images make -C $(KERNEL) dtbs dtbs_install
+	@INSTALL_MOD_PATH=../rootfs INSTALL_MOD_STRIP=--strip-unneeded make -C $(KERNEL) modules_install
+	@cp $(KERNEL)/arch/arm/boot/zImage images/
 
 $(KERNEL).tar.xz:
 	@wget -O $@ https://cdn.kernel.org/pub/linux/kernel/v4.x/$@
 
-$(KERNEL): $(KERNEL).tar.xz
+$(KERNEL)/.config: $(KERNEL).tar.xz
 	@tar xf $<
-	@cp linux.config $@/.config
-	@$(MAKE) -C $@ oldconfig
+	@cp linux.config $@
+	@$(MAKE) -C $(KERNEL) oldconfig
 
 busybox: rootfs/bin/busybox
 
-rootfs/bin/busybox: $(BUSYBOX) rootfs/etc/version
-	@$(MAKE) -C $<
-	@$(MAKE) -C $< install
+rootfs/bin/busybox: $(BUSYBOX)/.config rootfs/etc/version
+	@$(MAKE) -C $(BUSYBOX)
+	@$(MAKE) -C $(BUSYBOX) install
 
-$(BUSYBOX): $(BUSYBOX).tar.bz2
+$(BUSYBOX)/.config: $(BUSYBOX).tar.bz2
 	@tar xf $<
-	@cp busybox.config $@/.config
-	@$(MAKE) -C $@ oldconfig
+	@cp busybox.config $@
+	@$(MAKE) -C $(BUSYBOX) oldconfig
 
 $(BUSYBOX).tar.bz2:
 	@wget -O $@ http://busybox.net/downloads/$@
 
-libite: $(LIBITE)/.stamp
+libite: $(LIBITE)/.config
 
-$(LIBITE)/.stamp: $(LIBITE).tar.xz
+$(LIBITE)/.stamp: $(LIBITE)/.config
+	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $(dir $@) -j1 all install-strip
+	@touch $@
+
+$(LIBITE)/.config: $(LIBITE).tar.xz images/zImage rootfs/etc/version
 	@tar xf $<
 	@(cd $(dir $@) && ./configure --host=$(CROSS_TARGET) --prefix=)
-	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $(dir $@) all install-strip
 	@touch $@
 
 $(LIBITE).tar.xz:
@@ -100,10 +103,13 @@ $(LIBITE).tar.xz:
 
 libuev: $(LIBUEV)/.stamp
 
-$(LIBUEV)/.stamp: $(LIBUEV).tar.xz
+$(LIBUEV)/.stamp: $(LIBUEV)/.config
+	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $(dir $@) -j1 all install-strip
+	@touch $@
+
+$(LIBUEV)/.config: $(LIBUEV).tar.xz images/zImage rootfs/etc/version
 	@tar xf $<
 	@(cd $(dir $@) && ./configure --host=$(CROSS_TARGET) --prefix=)
-	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $(dir $@) all install-strip
 	@touch $@
 
 $(LIBUEV).tar.xz:
@@ -111,14 +117,21 @@ $(LIBUEV).tar.xz:
 
 finit: rootfs/sbin/finit
 
-rootfs/sbin/finit: $(FINIT)
-	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $< all install-strip
+rootfs/sbin/finit: $(FINIT)/.stamp
 	@cp finit.conf rootfs/etc/
 	@ln -sf finit rootfs/sbin/init
 
-$(FINIT): $(FINIT).tar.xz $(LIBUEV)/.stamp $(LIBITE)/.stamp $(KERNEL)/vmlinux rootfs/etc/version
+$(FINIT)/.stamp: $(FINIT)/.config
+	@DESTDIR=$(CWD)/rootfs $(MAKE) -C $(FINIT) -j1 all install-strip
+	@touch $@
+
+$(FINIT)/.config: $(FINIT).tar.xz $(LIBUEV)/.stamp $(LIBITE)/.stamp
 	@tar xf $<
-	@(cd $@ && ./configure --host=$(CROSS_TARGET) --prefix= --enable-fallback-shell --enable-watchdog)
+	@(cd $(FINIT) && ./configure --host=$(CROSS_TARGET) --prefix=	\
+				--with-heading="tinyroot linux"		\
+				--enable-fallback-shell			\
+				--enable-watchdog)
+	@touch $@
 
 $(FINIT).tar.xz:
 	@wget -O $@ http://ftp.troglobit.com/finit/$@
