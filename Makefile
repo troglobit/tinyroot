@@ -1,3 +1,5 @@
+.PHONY: dep
+
 KERNEL_VERSION := 4.15.4
 KERNEL         := linux-$(KERNEL_VERSION)
 KERNEL_BUILD   := rootfs/lib/modules/$(KERNEL_VERSION)/build
@@ -28,7 +30,6 @@ export PKG_CONFIG_LIBDIR
 # images/tinyroot.cpio.gz
 all tinyroot: images/tinyroot.img
 
-# 
 romfs/.stamp: rootfs/etc/version images/zImage rootfs/bin/busybox rootfs/sbin/finit
 	@$(CROSS_COMPILE)populate -f -s rootfs -d romfs
 	-@rm -rf romfs/include romfs/lib/pkgconfig romfs/share/doc
@@ -57,7 +58,15 @@ run:
 
 rootfs: rootfs/etc/version
 
-rootfs/etc/version:
+dep:
+	@$(CROSS_COMPILE)gcc --version >/dev/null 2>&1;					\
+	if [ $$? -ne 0 ]; then								\
+		/bin/echo -ne "\x1b[1;33m => Cannot find $(CROSS_COMPILE)gcc in PATH";	\
+		/bin/echo -e " -- http://ftp.troglobit.com/pub/Toolchains/\x1b[0m";	\
+		exit 1;									\
+	fi
+
+rootfs/etc/version: dep
 	@for dir in boot dev etc/init.d proc sys mnt lib bin sbin tmp var run; do \
 		mkdir -p rootfs/$$dir; \
 	done
