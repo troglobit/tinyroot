@@ -9,6 +9,7 @@ BUSYBOX=busybox-1.25.0
 export PATH=/usr/local/arm-unknown-linux-gnueabi-7.3.0-1/bin:$PATH
 export ARCH=arm
 export CROSS_COMPILE=arm-unknown-linux-gnueabi-
+export MAKE="make --silent --no-print-directory"
 
 msg() {
     /bin/echo -e "\x1b[1;34m--- "$1"\x1b[0m"
@@ -49,20 +50,20 @@ fetch ${KERNEL}.tar.xz https://cdn.kernel.org/pub/linux/kernel/v4.x/${KERNEL}.ta
 mkdir -p images
 cd ${KERNEL}/
 cp ../linux.config .config
-make oldconfig
-make -j5
-INSTALL_PATH=../images make install && cp arch/arm/boot/zImage ../images/
-INSTALL_DTBS_PATH=../images make dtbs dtbs_install
-INSTALL_MOD_PATH=../rootfs INSTALL_MOD_STRIP=--strip-all make modules_install
+${MAKE} oldconfig
+${MAKE} -j5
+INSTALL_PATH=../images      ${MAKE} install && cp arch/arm/boot/zImage ../images/
+INSTALL_DTBS_PATH=../images ${MAKE} dtbs dtbs_install
+INSTALL_MOD_PATH=../rootfs INSTALL_MOD_STRIP=--strip-unneeded ${MAKE} modules_install
 cd ..
 
-msg "Fetching, unpackng, and configuring BusyBox ..."
+msg "Fetching, unpacking, and configuring BusyBox ..."
 fetch ${BUSYBOX}.tar.bz2 http://busybox.net/downloads/${BUSYBOX}.tar.bz2
 cd ${BUSYBOX}/
 cp ../busybox.config .config
-make oldconfig
-make -j5
-make install
+${MAKE} oldconfig
+${MAKE} -j5
+${MAKE} install
 cd ..
 
 msg "Generating tinyroot ..."
