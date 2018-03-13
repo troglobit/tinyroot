@@ -39,10 +39,8 @@ fi
 # Enable error on first strike
 set -e
 
-msg "Creating rootfs ..."
-for dir in boot dev etc/init.d proc sys mnt lib bin sbin tmp var run; do
-    mkdir -p rootfs/$dir
-done
+msg "Populating rootfs ..."
+mkdir -p rootfs/etc/init.d
 echo '#!/bin/sh' > rootfs/etc/init.d/rcS
 chmod 0755 rootfs/etc/init.d/rcS
 
