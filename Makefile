@@ -1,6 +1,8 @@
+# tinyroot consists of the following components
+# change the below versions to upgrade them
 .PHONY: dep
 #VERSION       := `date +"%Y_%j"`
-OSVERSION      := "tinyroot linux v2018_071"
+OSVERSION      := "tinyroot linux v2018_DEV"
 
 KERNEL_VERSION := 4.15.4
 KERNEL         := linux-$(KERNEL_VERSION)
@@ -12,7 +14,8 @@ LIBITE         := libite-2.0.1
 LIBUEV         := libuev-2.1.2
 FINIT          := finit-3.1
 
-# Set up toolcahin
+# Set up toolcahin and target ARCH for Linux + BusyBox
+# If you have another toolchain, just add it to your $PATH
 PATH           := /usr/local/arm-unknown-linux-gnueabi-7.3.0-1/bin:$(PATH)
 ARCH           := arm
 CROSS_COMPILE  := arm-unknown-linux-gnueabi-
